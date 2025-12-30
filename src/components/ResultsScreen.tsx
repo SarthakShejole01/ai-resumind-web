@@ -2,35 +2,13 @@ import { motion } from "framer-motion";
 import { CheckCircle2, AlertTriangle, Lightbulb, TrendingUp, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { ScoreResponse } from "@/services/api";
+
 interface ResultsScreenProps {
   mode: "score" | "match";
   onStartOver: () => void;
+  results: ScoreResponse | null;
 }
-
-// Mock data - in real app this would come from AI analysis
-const mockResults = {
-  score: 78,
-  summary: "Your resume demonstrates strong technical skills and relevant experience. However, there are opportunities to better highlight your achievements and optimize keyword usage for ATS systems.",
-  strengths: [
-    "Clear and professional formatting",
-    "Strong action verbs used throughout",
-    "Relevant technical skills prominently displayed",
-    "Quantified achievements in recent roles",
-  ],
-  weaknesses: [
-    "Summary section could be more impactful",
-    "Some roles lack measurable outcomes",
-    "Skills section missing industry keywords",
-    "Education section formatting inconsistent",
-  ],
-  suggestions: [
-    "Add 2-3 more quantified achievements with metrics",
-    "Include relevant certifications in a dedicated section",
-    "Optimize for ATS by including job-specific keywords",
-    "Strengthen your professional summary with key accomplishments",
-    "Consider adding a projects section for additional credibility",
-  ],
-};
 
 const getScoreColor = (score: number) => {
   if (score >= 85) return "text-score-excellent";
@@ -53,8 +31,19 @@ const getScoreRingColor = (score: number) => {
   return "stroke-score-poor";
 };
 
-const ResultsScreen = ({ mode, onStartOver }: ResultsScreenProps) => {
-  const { score, summary, strengths, weaknesses, suggestions } = mockResults;
+const ResultsScreen = ({ mode, onStartOver, results }: ResultsScreenProps) => {
+  if (!results) {
+    return (
+      <section className="min-h-screen bg-hero-gradient py-12 px-6 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">No results available</h2>
+          <Button onClick={onStartOver}>Start Over</Button>
+        </div>
+      </section>
+    );
+  }
+
+  const { score, summary, strengths, weaknesses, suggestions } = results;
 
   const circumference = 2 * Math.PI * 90;
   const strokeDashoffset = circumference - (score / 100) * circumference;

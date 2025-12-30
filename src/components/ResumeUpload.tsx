@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, FileText, X, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,15 +6,19 @@ import { Button } from "@/components/ui/button";
 interface ResumeUploadProps {
   onUpload: (file: File) => void;
   onBack: () => void;
+  isLoading?: boolean;
+  externalError?: string | null;
 }
 
 type UploadState = "empty" | "selected" | "error";
 
-const ResumeUpload = ({ onUpload, onBack }: ResumeUploadProps) => {
+const ResumeUpload = ({ onUpload, onBack, isLoading = false, externalError = null }: ResumeUploadProps) => {
   const [uploadState, setUploadState] = useState<UploadState>("empty");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isDragOver, setIsDragOver] = useState(false);
+
+
 
   const validateFile = (file: File): boolean => {
     const validTypes = [
@@ -45,6 +49,15 @@ const ResumeUpload = ({ onUpload, onBack }: ResumeUploadProps) => {
       setErrorMessage("");
     }
   }, []);
+
+  // Effect to handle external errors
+  // Effect to handle external errors
+  useEffect(() => {
+    if (externalError) {
+      setErrorMessage(externalError);
+      setUploadState("error");
+    }
+  }, [externalError]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -117,13 +130,13 @@ const ResumeUpload = ({ onUpload, onBack }: ResumeUploadProps) => {
             onDrop={handleDrop}
             className={`
               relative rounded-3xl border-2 border-dashed p-8 md:p-12 transition-all duration-300
-              ${isDragOver 
-                ? "border-primary bg-primary/5 scale-[1.02]" 
+              ${isDragOver
+                ? "border-primary bg-primary/5 scale-[1.02]"
                 : uploadState === "error"
-                ? "border-destructive/50 bg-destructive/5"
-                : uploadState === "selected"
-                ? "border-accent/50 bg-accent/5"
-                : "border-border/50 bg-card/50 hover:border-primary/50 hover:bg-card/80"
+                  ? "border-destructive/50 bg-destructive/5"
+                  : uploadState === "selected"
+                    ? "border-accent/50 bg-accent/5"
+                    : "border-border/50 bg-card/50 hover:border-primary/50 hover:bg-card/80"
               }
               backdrop-blur-sm
             `}
@@ -226,17 +239,17 @@ const ResumeUpload = ({ onUpload, onBack }: ResumeUploadProps) => {
           transition={{ delay: 0.2 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8"
         >
-          <Button variant="ghost" onClick={onBack} className="order-2 sm:order-1">
+          <Button variant="ghost" onClick={onBack} disabled={isLoading} className="order-2 sm:order-1">
             Back
           </Button>
           <Button
             variant="hero"
             size="lg"
             onClick={handleAnalyze}
-            disabled={uploadState !== "selected"}
+            disabled={uploadState !== "selected" || isLoading}
             className="order-1 sm:order-2 w-full sm:w-auto"
           >
-            Analyze Resume
+            {isLoading ? "Analyzing..." : "Analyze Resume"}
           </Button>
         </motion.div>
       </div>

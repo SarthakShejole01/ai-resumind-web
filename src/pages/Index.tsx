@@ -5,6 +5,7 @@ import ResumeUpload from "@/components/ResumeUpload";
 import JobDescriptionInput from "@/components/JobDescriptionInput";
 import ProcessingScreen from "@/components/ProcessingScreen";
 import ResultsScreen from "@/components/ResultsScreen";
+import { analyzeResume, ScoreResponse } from "@/services/api";
 
 type AppState = "landing" | "upload" | "jobDescription" | "processing" | "results";
 type Mode = "score" | "match";
@@ -12,27 +13,46 @@ type Mode = "score" | "match";
 const Index = () => {
   const [appState, setAppState] = useState<AppState>("landing");
   const [mode, setMode] = useState<Mode>("score");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<ScoreResponse | null>(null);
 
   const handleScoreResume = () => {
     setMode("score");
     setAppState("upload");
+    setError(null);
   };
 
   const handleMatchResume = () => {
     setMode("match");
     setAppState("upload");
+    setError(null);
   };
 
-  const handleResumeUpload = (file: File) => {
+  const handleResumeUpload = async (file: File) => {
     console.log("Resume uploaded:", file.name);
+    setError(null);
+
     if (mode === "match") {
+      // TODO: Handle match mode later if needed, or stick to existing flow
       setAppState("jobDescription");
     } else {
-      setAppState("processing");
-      // Simulate processing time
-      setTimeout(() => {
-        setAppState("results");
-      }, 3000);
+      setIsLoading(true);
+      try {
+        const result = await analyzeResume(file);
+        setAnalysisResult(result);
+        setAppState("processing");
+        // Maintain the processing animation for a bit for better UX, or just go straight to results
+        // For now, let's show processing for at least 2 seconds so the user sees the transition
+        setTimeout(() => {
+          setAppState("results");
+          setIsLoading(false);
+        }, 2000);
+      } catch (err: any) {
+        console.error("Analysis failed:", err);
+        setError(err.message || "Failed to analyze resume");
+        setIsLoading(false);
+      }
     }
   };
 
@@ -48,9 +68,12 @@ const Index = () => {
   const handleStartOver = () => {
     setAppState("landing");
     setMode("score");
+    setAnalysisResult(null);
+    setError(null);
   };
 
   const handleBack = () => {
+    setError(null);
     switch (appState) {
       case "upload":
         setAppState("landing");
@@ -85,14 +108,23 @@ const Index = () => {
           <LandingHero onScoreResume={handleScoreResume} onMatchResume={handleMatchResume} />
         )}
         {appState === "upload" && (
-          <ResumeUpload onUpload={handleResumeUpload} onBack={handleBack} />
+          <ResumeUpload
+            onUpload={handleResumeUpload}
+            onBack={handleBack}
+            isLoading={isLoading}
+            externalError={error}
+          />
         )}
         {appState === "jobDescription" && (
           <JobDescriptionInput onSubmit={handleJobDescriptionSubmit} onBack={handleBack} />
         )}
         {appState === "processing" && <ProcessingScreen mode={mode} />}
         {appState === "results" && (
-          <ResultsScreen mode={mode} onStartOver={handleStartOver} />
+          <ResultsScreen
+            mode={mode}
+            onStartOver={handleStartOver}
+            results={analysisResult}
+          />
         )}
       </main>
     </>
