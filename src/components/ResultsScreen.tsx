@@ -1,13 +1,12 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, AlertTriangle, Lightbulb, TrendingUp, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-import { ScoreResponse } from "@/services/api";
+import { ScoreResponse, MatchResponse } from "@/services/api";
 
 interface ResultsScreenProps {
   mode: "score" | "match";
   onStartOver: () => void;
-  results: ScoreResponse | null;
+  results: ScoreResponse | MatchResponse | null;
 }
 
 const getScoreColor = (score: number) => {
@@ -43,7 +42,20 @@ const ResultsScreen = ({ mode, onStartOver, results }: ResultsScreenProps) => {
     );
   }
 
-  const { score, summary, strengths, weaknesses, suggestions } = results;
+  // Normalize data access
+  const score = 'score' in results ? results.score : (results as MatchResponse).matchScore;
+  const summary = results.summary;
+
+  // Lists
+  const list1 = 'strengths' in results ? results.strengths : (results as MatchResponse).matchedSkills;
+  const list1Title = mode === 'score' ? "Strengths" : "Matched Skills";
+
+  const list2 = 'weaknesses' in results ? results.weaknesses : (results as MatchResponse).missingSkills;
+  const list2Title = mode === 'score' ? "Areas to Improve" : "Missing Skills";
+
+  const list3 = 'suggestions' in results ? results.suggestions : (results as MatchResponse).improvements;
+  const list3Title = mode === 'score' ? "Suggestions" : "Recommended Actions";
+
 
   const circumference = 2 * Math.PI * 90;
   const strokeDashoffset = circumference - (score / 100) * circumference;
@@ -136,7 +148,7 @@ const ResultsScreen = ({ mode, onStartOver, results }: ResultsScreenProps) => {
 
         {/* Cards grid */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Strengths */}
+          {/* List 1 (Strengths / Matched) */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -148,10 +160,10 @@ const ResultsScreen = ({ mode, onStartOver, results }: ResultsScreenProps) => {
                 <div className="p-2 rounded-lg bg-score-good/10">
                   <CheckCircle2 className="w-5 h-5 text-score-good" />
                 </div>
-                <h3 className="font-display text-lg font-semibold">Strengths</h3>
+                <h3 className="font-display text-lg font-semibold">{list1Title}</h3>
               </div>
               <ul className="space-y-3">
-                {strengths.map((item, index) => (
+                {list1.map((item, index) => (
                   <motion.li
                     key={index}
                     initial={{ opacity: 0, x: -10 }}
@@ -167,7 +179,7 @@ const ResultsScreen = ({ mode, onStartOver, results }: ResultsScreenProps) => {
             </div>
           </motion.div>
 
-          {/* Weaknesses */}
+          {/* List 2 (Weaknesses / Missing) */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -179,10 +191,10 @@ const ResultsScreen = ({ mode, onStartOver, results }: ResultsScreenProps) => {
                 <div className="p-2 rounded-lg bg-score-average/10">
                   <AlertTriangle className="w-5 h-5 text-score-average" />
                 </div>
-                <h3 className="font-display text-lg font-semibold">Areas to Improve</h3>
+                <h3 className="font-display text-lg font-semibold">{list2Title}</h3>
               </div>
               <ul className="space-y-3">
-                {weaknesses.map((item, index) => (
+                {list2.map((item, index) => (
                   <motion.li
                     key={index}
                     initial={{ opacity: 0, x: 10 }}
@@ -199,7 +211,7 @@ const ResultsScreen = ({ mode, onStartOver, results }: ResultsScreenProps) => {
           </motion.div>
         </div>
 
-        {/* Suggestions */}
+        {/* List 3 (Suggestions / Improvements) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -211,10 +223,10 @@ const ResultsScreen = ({ mode, onStartOver, results }: ResultsScreenProps) => {
               <div className="p-2 rounded-lg bg-primary/10">
                 <Lightbulb className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="font-display text-lg font-semibold">Suggestions</h3>
+              <h3 className="font-display text-lg font-semibold">{list3Title}</h3>
             </div>
             <ul className="space-y-3">
-              {suggestions.map((item, index) => (
+              {list3.map((item, index) => (
                 <motion.li
                   key={index}
                   initial={{ opacity: 0, y: 10 }}

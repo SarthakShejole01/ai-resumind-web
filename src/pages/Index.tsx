@@ -5,7 +5,7 @@ import ResumeUpload from "@/components/ResumeUpload";
 import JobDescriptionInput from "@/components/JobDescriptionInput";
 import ProcessingScreen from "@/components/ProcessingScreen";
 import ResultsScreen from "@/components/ResultsScreen";
-import { analyzeResume, ScoreResponse } from "@/services/api";
+import { analyzeResume, matchResumeToJob, ScoreResponse, MatchResponse } from "@/services/api";
 
 type AppState = "landing" | "upload" | "jobDescription" | "processing" | "results";
 type Mode = "score" | "match";
@@ -15,26 +15,29 @@ const Index = () => {
   const [mode, setMode] = useState<Mode>("score");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<ScoreResponse | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<ScoreResponse | MatchResponse | null>(null);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const handleScoreResume = () => {
     setMode("score");
     setAppState("upload");
     setError(null);
+    setResumeFile(null);
   };
 
   const handleMatchResume = () => {
     setMode("match");
     setAppState("upload");
     setError(null);
+    setResumeFile(null);
   };
 
   const handleResumeUpload = async (file: File) => {
     console.log("Resume uploaded:", file.name);
     setError(null);
+    setResumeFile(file);
 
     if (mode === "match") {
-      // TODO: Handle match mode later if needed, or stick to existing flow
       setAppState("jobDescription");
     } else {
       setIsLoading(true);
@@ -42,8 +45,6 @@ const Index = () => {
         const result = await analyzeResume(file);
         setAnalysisResult(result);
         setAppState("processing");
-        // Maintain the processing animation for a bit for better UX, or just go straight to results
-        // For now, let's show processing for at least 2 seconds so the user sees the transition
         setTimeout(() => {
           setAppState("results");
           setIsLoading(false);
@@ -56,13 +57,31 @@ const Index = () => {
     }
   };
 
-  const handleJobDescriptionSubmit = (description: string) => {
+  const handleJobDescriptionSubmit = async (description: string) => {
     console.log("Job description submitted:", description.substring(0, 100));
-    setAppState("processing");
-    // Simulate processing time
-    setTimeout(() => {
-      setAppState("results");
-    }, 3000);
+
+    if (!resumeFile) {
+      setError("Resume file missing. Please start over.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await matchResumeToJob(resumeFile, description);
+      setAnalysisResult(result);
+      setAppState("processing");
+      setTimeout(() => {
+        setAppState("results");
+        setIsLoading(false);
+      }, 2000);
+    } catch (err: any) {
+      console.error("Match failed:", err);
+      // Show error on current screen ideally, but we might be navigating. 
+      // For simple flow, simple alert or error state that is passed down could work.
+      // Or we stay on this step and show error.
+      setError(err.message || "Failed to match resume");
+      setIsLoading(false);
+    }
   };
 
   const handleStartOver = () => {
@@ -70,6 +89,7 @@ const Index = () => {
     setMode("score");
     setAnalysisResult(null);
     setError(null);
+    setResumeFile(null);
   };
 
   const handleBack = () => {
@@ -111,12 +131,16 @@ const Index = () => {
           <ResumeUpload
             onUpload={handleResumeUpload}
             onBack={handleBack}
-            isLoading={isLoading}
+            isLoading={isLoading && mode === "score"}
             externalError={error}
           />
         )}
         {appState === "jobDescription" && (
-          <JobDescriptionInput onSubmit={handleJobDescriptionSubmit} onBack={handleBack} />
+          <JobDescriptionInput
+            onSubmit={handleJobDescriptionSubmit}
+            onBack={handleBack}
+            isLoading={isLoading && mode === "match"}
+          />
         )}
         {appState === "processing" && <ProcessingScreen mode={mode} />}
         {appState === "results" && (
