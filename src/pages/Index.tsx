@@ -109,13 +109,13 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>ResuMind - AI-Powered Resume Intelligence</title>
+        <title>Resuvia - AI-Powered Resume Intelligence</title>
         <meta
           name="description"
-          content="Unlock your career potential with ResuMind. Get AI-driven resume analysis, job matching, and personalized recommendations to land your dream job."
+          content="Unlock your career potential with Resuvia. Get AI-driven resume analysis, job matching, and personalized recommendations to land your dream job."
         />
         <meta name="keywords" content="resume analysis, AI resume, job matching, career tools, resume score" />
-        <meta property="og:title" content="ResuMind - AI-Powered Resume Intelligence" />
+        <meta property="og:title" content="Resuvia - AI-Powered Resume Intelligence" />
         <meta
           property="og:description"
           content="Get instant AI-powered resume analysis and job matching to boost your career."
